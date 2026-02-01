@@ -25,6 +25,12 @@ from .strategies.base import BaseStrategy, Signal
 from .strategies.mean_reversion import MeanReversionStrategy
 from .strategies.momentum import MomentumStrategy
 from .strategies.market_making import MarketMakingStrategy
+from .strategies.ufc_strategies import (
+    FavoriteBackerStrategy,
+    UnderdogValueStrategy,
+    FinishPropStrategy,
+    MethodOfVictoryStrategy,
+)
 from .notifications import TelegramNotifier
 
 log = structlog.get_logger()
@@ -80,6 +86,14 @@ class Orchestrator:
                 strategy = MomentumStrategy(params)
             elif name == "MarketMaking":
                 strategy = MarketMakingStrategy(params)
+            elif name == "FavoriteBacker":
+                strategy = FavoriteBackerStrategy(params)
+            elif name == "UnderdogValue":
+                strategy = UnderdogValueStrategy(params)
+            elif name == "FinishProp":
+                strategy = FinishPropStrategy(params)
+            elif name == "MethodOfVictory":
+                strategy = MethodOfVictoryStrategy(params)
             else:
                 log.warning("Unknown strategy", name=name)
                 continue

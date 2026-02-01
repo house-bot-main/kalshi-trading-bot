@@ -70,12 +70,50 @@ strategies:
       position_size: 5.0
 
   MarketMaking:
-    enabled: true
-    initial_capital: 66.0
+    enabled: false  # Disabled - too complex for now
+    initial_capital: 20.0
     max_position_size: 10.0
     params:
-      min_spread: 0.05         # Min bid-ask spread to quote
+      min_spread: 0.05
       position_size: 5.0
+
+  # UFC-specific strategies
+  FavoriteBacker:
+    enabled: true
+    initial_capital: 40.0
+    max_position_size: 10.0
+    params:
+      min_favorite_price: 0.70  # Min price to consider favorite
+      max_favorite_price: 0.85  # Max price (avoid >85% favorites)
+      position_size: 5.0
+
+  UnderdogValue:
+    enabled: true
+    initial_capital: 30.0
+    max_position_size: 8.0
+    params:
+      min_underdog_price: 0.15
+      max_underdog_price: 0.35
+      position_size: 3.0
+
+  FinishProp:
+    enabled: true
+    initial_capital: 30.0
+    max_position_size: 8.0
+    params:
+      max_finish_price: 0.40   # Bet on finishes priced <40%
+      position_size: 4.0
+
+  MethodOfVictory:
+    enabled: true
+    initial_capital: 30.0
+    max_position_size: 8.0
+    params:
+      ko_fair_price: 0.30      # Historical KO rate
+      sub_fair_price: 0.20     # Historical sub rate
+      dec_fair_price: 0.45     # Historical decision rate
+      edge_threshold: 0.10     # Need 10% edge to trade
+      position_size: 4.0
 
 # Logging
 # -------
