@@ -15,7 +15,7 @@ log = structlog.get_logger()
 class TelegramNotifier:
     """Send notifications via OpenClaw's Telegram integration."""
     
-    def __init__(self, enabled: bool = True):
+    def __init__(self, enabled: bool = False):  # Disabled by default for now
         self.enabled = enabled
         self._last_daily_summary = None
     

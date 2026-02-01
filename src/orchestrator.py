@@ -204,14 +204,21 @@ class Orchestrator:
                     print("[DEBUG] _running is False, breaking", flush=True)
                     break
                 
-                await self._process_cycle(signals)
-                print("[DEBUG] Cycle processed, waiting for next...", flush=True)
+                try:
+                    await self._process_cycle(signals)
+                    print("[DEBUG] Cycle processed, waiting for next...", flush=True)
+                except Exception as cycle_err:
+                    print(f"[DEBUG] Cycle error: {cycle_err}", flush=True)
+                    import traceback
+                    traceback.print_exc()
                 
         except asyncio.CancelledError:
             print("[DEBUG] CancelledError", flush=True)
             log.info("Trading loop cancelled")
         except Exception as e:
-            print(f"[DEBUG] Exception: {e}", flush=True)
+            print(f"[DEBUG] Loop Exception: {e}", flush=True)
+            import traceback
+            traceback.print_exc()
             log.error("Trading loop error", error=str(e), exc_info=True)
         finally:
             print("[DEBUG] Cleaning up...", flush=True)
@@ -279,13 +286,13 @@ class Orchestrator:
                     self._performance_tracker.record_trade(position)
                     
                     # Notify on position close
-                    pnl = position.get("pnl", 0)
-                    entry = position.get("entry_price", 0.5)
-                    exit_price = position.get("exit_price", 0.5)
+                    pnl = position.pnl
+                    entry = position.entry_price
+                    exit_price = position.exit_price or 0.5
                     pnl_pct = (exit_price - entry) / entry if entry > 0 else 0
                     self._notifier.position_closed(
                         strategy=strategy.name,
-                        ticker=position.get("market_id", "unknown"),
+                        ticker=position.market_id,
                         pnl=pnl,
                         pnl_pct=pnl_pct,
                         paper=True
