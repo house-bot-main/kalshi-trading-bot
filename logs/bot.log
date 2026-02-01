@@ -1,0 +1,26 @@
+[2m2026-02-01T00:51:56.323077Z[0m [[33m[1mwarning  [0m] [1m⚠️ LIVE TRADING MODE ENABLED - REAL MONEY AT RISK[0m [[0m[1m[34m__main__[0m][0m
+
+============================================================
+⚠️  WARNING: LIVE TRADING MODE
+============================================================
+You are about to trade with REAL MONEY.
+This is NOT RECOMMENDED for automated trading.
+============================================================
+Type 'I UNDERSTAND THE RISK' to continue: Traceback (most recent call last):
+  File "/home/house/.openclaw/workspace/kalshi-trading-bot/main.py", line 230, in <module>
+    main()
+  File "/home/house/.openclaw/workspace/kalshi-trading-bot/main.py", line 223, in main
+    asyncio.run(run_continuous(args.config, sandbox=sandbox))
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/house/.openclaw/workspace/kalshi-trading-bot/main.py", line 191, in run_continuous
+    confirm = input("Type 'I UNDERSTAND THE RISK' to continue: ")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+EOFError: EOF when reading a line

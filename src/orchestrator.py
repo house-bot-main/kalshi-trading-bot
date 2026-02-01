@@ -161,6 +161,7 @@ class Orchestrator:
         This is the main entry point after initialization.
         """
         self._running = True
+        print("[DEBUG] run() started, _running=True", flush=True)
         log.info("Starting trading loop...")
         
         # Set up signal handlers
@@ -168,18 +169,25 @@ class Orchestrator:
         for sig in (signal.SIGTERM, signal.SIGINT):
             loop.add_signal_handler(sig, lambda: asyncio.create_task(self.shutdown()))
         
+        print("[DEBUG] Entering scanner loop...", flush=True)
         try:
             async for signals in self._scanner.run_continuous():
+                print(f"[DEBUG] Got {len(signals)} signals", flush=True)
                 if not self._running:
+                    print("[DEBUG] _running is False, breaking", flush=True)
                     break
                 
                 await self._process_cycle(signals)
+                print("[DEBUG] Cycle processed, waiting for next...", flush=True)
                 
         except asyncio.CancelledError:
+            print("[DEBUG] CancelledError", flush=True)
             log.info("Trading loop cancelled")
         except Exception as e:
+            print(f"[DEBUG] Exception: {e}", flush=True)
             log.error("Trading loop error", error=str(e), exc_info=True)
         finally:
+            print("[DEBUG] Cleaning up...", flush=True)
             await self.cleanup()
     
     async def _process_cycle(self, signals: List[Signal]):
@@ -325,17 +333,27 @@ async def run_bot(config_path: str = "config.yaml", sandbox: bool = True):
         config_path: Path to config file
         sandbox: Force sandbox mode (default True, RECOMMENDED)
     """
+    print(f"[DEBUG] run_bot called: config_path={config_path}, sandbox={sandbox}", flush=True)
+    
     # Load config
+    print("[DEBUG] Loading config...", flush=True)
     config = Config.load(config_path)
+    print(f"[DEBUG] Config loaded, sandbox={config.sandbox}", flush=True)
     
     # CRITICAL: Override to sandbox if requested
     if sandbox:
         config.sandbox = True
+        print("[DEBUG] Forcing sandbox mode", flush=True)
+    
+    print(f"[DEBUG] Creating orchestrator...", flush=True)
     
     # Create and run orchestrator
     orchestrator = Orchestrator(config)
+    print("[DEBUG] Orchestrator created, initializing...", flush=True)
     
     if await orchestrator.initialize():
+        print("[DEBUG] Orchestrator initialized, starting run loop...", flush=True)
         await orchestrator.run()
     else:
+        print("[DEBUG] Failed to initialize orchestrator!", flush=True)
         log.error("Failed to initialize orchestrator")

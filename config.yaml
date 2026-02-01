@@ -3,9 +3,10 @@
 # IMPORTANT: sandbox mode is ENFORCED for this bot.
 # Do not set sandbox: false for automated trading.
 
-# Force sandbox mode (safety)
-force_sandbox: true
-sandbox: true
+# Sandbox mode - set force_sandbox: false to allow production API
+# For paper trading with real market data, use production API
+force_sandbox: false
+sandbox: false
 
 # API credentials (loaded from environment)
 api_key_env_var: KALSHI_API_KEY

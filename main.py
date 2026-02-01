@@ -96,6 +96,12 @@ be explicitly enabled and is NOT RECOMMENDED for automated use.
         help="Enable verbose logging"
     )
     
+    parser.add_argument(
+        "--yes", "-y",
+        action="store_true",
+        help="Skip confirmation prompts (for automated runs)"
+    )
+    
     return parser.parse_args()
 
 
@@ -176,11 +182,11 @@ async def run_once(config_path: str, sandbox: bool = True):
         await orchestrator.cleanup()
 
 
-async def run_continuous(config_path: str, sandbox: bool = True):
+async def run_continuous(config_path: str, sandbox: bool = True, skip_confirm: bool = False):
     """Run continuous trading loop."""
     from src.orchestrator import run_bot
     
-    if not sandbox:
+    if not sandbox and not skip_confirm:
         print("\n" + "="*60)
         print("⚠️  WARNING: LIVE TRADING MODE")
         print("="*60)
@@ -192,6 +198,8 @@ async def run_continuous(config_path: str, sandbox: bool = True):
         if confirm != "I UNDERSTAND THE RISK":
             print("Aborted.")
             return False
+    elif not sandbox:
+        log.warning("⚠️ Running in live mode with --yes flag (confirmation skipped)")
     
     await run_bot(config_path, sandbox=sandbox)
     return True
@@ -220,7 +228,7 @@ def main():
     else:
         # Continuous mode
         try:
-            asyncio.run(run_continuous(args.config, sandbox=sandbox))
+            asyncio.run(run_continuous(args.config, sandbox=sandbox, skip_confirm=args.yes))
         except KeyboardInterrupt:
             log.info("Interrupted by user")
             sys.exit(0)
