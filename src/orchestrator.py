@@ -213,16 +213,24 @@ class Orchestrator:
         now = datetime.now(timezone.utc)
         
         # 1. Process signals - execute paper trades
+        processed = 0
+        skipped_mm = 0
+        skipped_no_market = 0
+        executed = 0
+        
         for signal in signals:
             if signal.side == "both":
                 # Market making - skip for now (complex)
+                skipped_mm += 1
                 continue
             
             # Get current market price
             market = self._scanner.get_market(signal.market_id)
             if not market:
+                skipped_no_market += 1
                 continue
             
+            processed += 1
             # Execute paper trade
             position = self._paper_trader.execute_signal(signal, market.yes_price)
             if position:
@@ -241,6 +249,9 @@ class Orchestrator:
                     size=signal.size,
                     paper=True
                 )
+                executed += 1
+        
+        print(f"[DEBUG] Signals: {len(signals)} total, {skipped_mm} market-making, {skipped_no_market} no-market, {processed} processed, {executed} executed", flush=True)
         
         # 2. Check exits for existing positions
         for market in self._scanner.get_all_markets():

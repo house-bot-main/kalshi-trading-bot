@@ -90,6 +90,14 @@ class MarketScanner:
         # Control flags
         self._running = False
         
+    # High-priority series to always scan (e.g., UFC, sports with good liquidity)
+    PRIORITY_SERIES = [
+        'KXUFCFIGHT',      # UFC fight winners
+        'KXUFCMOV',        # UFC method of victory
+        'KXUFCVICROUND',   # UFC round of victory  
+        'KXUFCROUNDS',     # UFC total rounds
+    ]
+    
     async def scan_once(self) -> List[MarketData]:
         """
         Perform a single scan of all markets.
@@ -97,11 +105,28 @@ class MarketScanner:
         Returns list of markets meeting filter criteria.
         """
         qualifying_markets = []
+        seen_tickers = set()
+        
+        # First, scan priority series (UFC, etc.)
+        for series in self.PRIORITY_SERIES:
+            try:
+                series_markets = await self._scan_series(series)
+                for m in series_markets:
+                    if m.ticker not in seen_tickers:
+                        qualifying_markets.append(m)
+                        seen_tickers.add(m.ticker)
+                        self._market_cache[m.ticker] = m
+            except Exception as e:
+                log.warning("Failed to scan series", series=series, error=str(e))
+        
+        log.info("Priority series scanned", markets_found=len(qualifying_markets))
+        
+        # Then do general scan
         cursor = None
         total_scanned = 0
         max_markets = getattr(self.config, 'max_markets', 500)
         
-        log.info("Starting market scan", max_markets=max_markets)
+        log.info("Starting general market scan", max_markets=max_markets)
         
         while True:
             # Fetch markets page
@@ -125,6 +150,10 @@ class MarketScanner:
                 
                 market_data = self._parse_market(market)
                 
+                # Skip if already scanned from priority series
+                if market_data.ticker in seen_tickers:
+                    continue
+                
                 # Apply filters
                 if self._passes_filters(market_data):
                     # Fetch order book for qualifying markets
@@ -135,6 +164,7 @@ class MarketScanner:
                         log.warning("Failed to fetch orderbook", ticker=market_data.ticker, error=str(e))
                     
                     qualifying_markets.append(market_data)
+                    seen_tickers.add(market_data.ticker)
                     self._market_cache[market_data.ticker] = market_data
             
             # Check if we hit the limit
@@ -150,6 +180,57 @@ class MarketScanner:
         log.info("Scan complete", markets_found=len(qualifying_markets))
         
         return qualifying_markets
+    
+    async def _scan_series(self, series_ticker: str) -> List[MarketData]:
+        """
+        Scan all markets for a specific series.
+        
+        Args:
+            series_ticker: Series to scan (e.g., 'KXUFCFIGHT')
+            
+        Returns:
+            List of qualifying markets from this series
+        """
+        markets = []
+        
+        try:
+            # Get events for this series
+            events_resp = await self.client._request('GET', '/events', params={
+                'series_ticker': series_ticker,
+                'status': 'open',
+                'limit': 50
+            })
+            events = events_resp.get('events', [])
+            
+            for event in events:
+                event_ticker = event.get('event_ticker', '')
+                if not event_ticker:
+                    continue
+                
+                # Get markets for this event
+                markets_resp = await self.client._request('GET', '/markets', params={
+                    'event_ticker': event_ticker,
+                    'limit': 20
+                })
+                
+                for raw_market in markets_resp.get('markets', []):
+                    market_data = self._parse_market(raw_market)
+                    
+                    # Fetch order book
+                    try:
+                        orderbook = await self.client.get_orderbook(market_data.ticker)
+                        market_data.order_book = self._parse_orderbook(orderbook)
+                    except Exception:
+                        pass
+                    
+                    markets.append(market_data)
+            
+            log.info("Series scanned", series=series_ticker, markets=len(markets))
+            
+        except Exception as e:
+            log.error("Series scan failed", series=series_ticker, error=str(e))
+        
+        return markets
     
     def _parse_market(self, raw: Dict) -> MarketData:
         """Parse raw API market data into MarketData."""
