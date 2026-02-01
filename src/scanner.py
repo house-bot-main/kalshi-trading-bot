@@ -98,8 +98,10 @@ class MarketScanner:
         """
         qualifying_markets = []
         cursor = None
+        total_scanned = 0
+        max_markets = getattr(self.config, 'max_markets', 500)
         
-        log.info("Starting market scan")
+        log.info("Starting market scan", max_markets=max_markets)
         
         while True:
             # Fetch markets page
@@ -114,6 +116,13 @@ class MarketScanner:
                 break
             
             for market in markets:
+                total_scanned += 1
+                
+                # Respect max_markets limit
+                if total_scanned > max_markets:
+                    log.info("Reached max_markets limit", limit=max_markets)
+                    break
+                
                 market_data = self._parse_market(market)
                 
                 # Apply filters
@@ -127,6 +136,10 @@ class MarketScanner:
                     
                     qualifying_markets.append(market_data)
                     self._market_cache[market_data.ticker] = market_data
+            
+            # Check if we hit the limit
+            if total_scanned >= max_markets:
+                break
             
             # Pagination
             cursor = response.get("cursor")

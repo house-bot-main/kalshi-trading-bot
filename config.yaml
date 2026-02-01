@@ -25,8 +25,9 @@ risk:
 # --------------
 scanner:
   poll_interval_seconds: 30.0
-  min_volume: 100             # Minimum daily volume
-  min_liquidity: 50.0         # Minimum order book depth ($)
+  min_volume: 0               # Minimum daily volume (0 for testing)
+  min_liquidity: 0            # Minimum order book depth ($)
+  max_markets: 200            # Limit markets per scan (performance)
   market_status: open
 
 # Performance Tracking

@@ -38,6 +38,7 @@ class ScannerConfig:
     min_volume: int = 100             # Min daily volume
     min_liquidity: float = 50.0       # Min $ in order book
     market_status: str = "open"
+    max_markets: int = 500            # Max markets to scan per cycle
 
 
 @dataclass
