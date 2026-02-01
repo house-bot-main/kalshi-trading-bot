@@ -1,0 +1,81 @@
+# Kalshi Trading Bot Configuration
+# =================================
+# IMPORTANT: sandbox mode is ENFORCED for this bot.
+# Do not set sandbox: false for automated trading.
+
+# Force sandbox mode (safety)
+force_sandbox: true
+sandbox: true
+
+# API credentials (loaded from environment)
+api_key_env_var: KALSHI_API_KEY
+private_key_path: ~/.openclaw/.secrets/kalshi_private_key.pem
+
+# Risk Management
+# ---------------
+# These are HARD LIMITS for the bot
+risk:
+  max_total_capital: 200.0    # Total virtual capital ($)
+  max_position_size: 10.0     # Max per trade ($)
+  max_daily_loss: 20.0        # Stop trading if down this much
+  max_concurrent_positions: 10
+  max_exposure_pct: 0.20      # Max 20% of capital at risk
+
+# Market Scanner
+# --------------
+scanner:
+  poll_interval_seconds: 30.0
+  min_volume: 100             # Minimum daily volume
+  min_liquidity: 50.0         # Minimum order book depth ($)
+  market_status: open
+
+# Performance Tracking
+# --------------------
+performance:
+  db_path: data/performance.db
+  rolling_window_days: 30
+  min_trades_for_ranking: 5   # Need at least 5 trades to rank
+
+# Capital Allocator
+# -----------------
+allocator:
+  rebalance_interval_hours: 24.0
+  min_sharpe_ratio: 0.5       # Min Sharpe to receive allocation
+  performance_weight: 0.7     # Weight for returns in ranking
+  risk_weight: 0.3            # Weight for risk metrics
+
+# Strategy Configurations
+# -----------------------
+strategies:
+  MeanReversion:
+    enabled: true
+    initial_capital: 66.0
+    max_position_size: 10.0
+    params:
+      extreme_threshold: 0.95  # YES price above this = sell signal
+      min_threshold: 0.05      # YES price below this = buy signal
+      exit_target: 0.50        # Exit when price normalizes
+      base_position_size: 5.0
+
+  Momentum:
+    enabled: true
+    initial_capital: 66.0
+    max_position_size: 10.0
+    params:
+      short_ma: 5              # Short moving average period
+      long_ma: 20              # Long moving average period
+      momentum_threshold: 0.02 # Min momentum to trigger
+      position_size: 5.0
+
+  MarketMaking:
+    enabled: true
+    initial_capital: 66.0
+    max_position_size: 10.0
+    params:
+      min_spread: 0.05         # Min bid-ask spread to quote
+      position_size: 5.0
+
+# Logging
+# -------
+log_level: INFO
+log_file: logs/trading.log
