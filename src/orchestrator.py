@@ -25,6 +25,7 @@ from .strategies.base import BaseStrategy, Signal
 from .strategies.mean_reversion import MeanReversionStrategy
 from .strategies.momentum import MomentumStrategy
 from .strategies.market_making import MarketMakingStrategy
+from .notifications import TelegramNotifier
 
 log = structlog.get_logger()
 
@@ -51,6 +52,9 @@ class Orchestrator:
         self._paper_trader: Optional[PaperTrader] = None
         self._performance_tracker: Optional[PerformanceTracker] = None
         self._allocator: Optional[CapitalAllocator] = None
+        
+        # Notifications
+        self._notifier = TelegramNotifier(enabled=True)
         
         # Strategies
         self._strategies: List[BaseStrategy] = []
@@ -152,6 +156,15 @@ class Orchestrator:
         )
         
         log.info("Orchestrator initialized successfully")
+        
+        # Send startup notification
+        strategy_names = [s.name for s in self._strategies]
+        total_capital = sum(
+            sc.initial_capital for sc in self.config.strategies.values() if sc.enabled
+        )
+        mode = "SANDBOX" if self.config.sandbox else "PRODUCTION (Paper)"
+        self._notifier.startup(mode, strategy_names, total_capital)
+        
         return True
     
     async def run(self):
@@ -219,6 +232,15 @@ class Orchestrator:
                     market=signal.market_id,
                     side=signal.side,
                 )
+                # Notify on trade
+                self._notifier.trade_executed(
+                    strategy=signal.strategy_name,
+                    ticker=signal.market_id,
+                    side=signal.side,
+                    price=market.yes_price,
+                    size=signal.size,
+                    paper=True
+                )
         
         # 2. Check exits for existing positions
         for market in self._scanner.get_all_markets():
@@ -230,6 +252,19 @@ class Orchestrator:
                 # Record closed trades
                 for position in closed:
                     self._performance_tracker.record_trade(position)
+                    
+                    # Notify on position close
+                    pnl = position.get("pnl", 0)
+                    entry = position.get("entry_price", 0.5)
+                    exit_price = position.get("exit_price", 0.5)
+                    pnl_pct = (exit_price - entry) / entry if entry > 0 else 0
+                    self._notifier.position_closed(
+                        strategy=strategy.name,
+                        ticker=position.get("market_id", "unknown"),
+                        pnl=pnl,
+                        pnl_pct=pnl_pct,
+                        paper=True
+                    )
                     
                     # Record capital snapshot
                     portfolio = self._paper_trader.get_portfolio(strategy.name)
@@ -299,6 +334,9 @@ class Orchestrator:
         # Close API client
         if self._client:
             await self._client.close()
+        
+        # Send shutdown notification
+        self._notifier.shutdown("normal")
         
         log.info("Cleanup complete")
     
